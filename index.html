@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Store Single Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      padding: 20px;
+    }
+    .container {
+      max-width: 400px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px #ccc;
+      text-align: center;
+    }
+    input, button {
+      margin: 10px 0;
+      padding: 10px;
+      width: 100%;
+      font-size: 16px;
+    }
+    #products > div, #cartItems > div {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
+      text-align: left;
+    }
+    #products button {
+      width: auto;
+      padding: 5px 10px;
+      margin-left: 10px;
+    }
+    nav {
+      margin-bottom: 20px;
+    }
+    nav button {
+      margin: 0 5px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <nav>
+      <button id="navLogin">Login</button>
+      <button id="navProducts">Products</button>
+      <button id="navCart">Cart</button>
+      <button id="navPay">Payment</button>
+    </nav>
+
+    <!-- Login Section -->
+    <section id="pageLogin">
+      <h1>Login with Phone Number</h1>
+      <input type="tel" id="phone" placeholder="Enter phone number" />
+      <button id="loginBtn">Login</button>
+      <p id="loginStatus"></p>
+    </section>
+
+    <!-- Products Section -->
+    <section id="pageProducts" style="display:none;">
+      <h1>Products</h1>
+      <div id="products"></div>
+      <button id="goToCart">Go to Cart</button>
+    </section>
+
+    <!-- Cart Section -->
+    <section id="pageCart" style="display:none;">
+      <h1>Your Cart</h1>
+      <div id="cartItems"></div>
+      <button id="buyBtn">Buy Now</button>
+    </section>
+
+    <!-- Payment Section -->
+    <section id="pagePay" style="display:none;">
+      <h1>Payment</h1>
+      <form id="paymentForm">
+        <input type="text" placeholder="Card Number" required /><br />
+        <input type="text" placeholder="Expiry Date" required /><br />
+        <input type="text" placeholder="CVV" required /><br />
+        <button type="submit">Pay</button>
+      </form>
+    </section>
+
+  </div>
+
+<script>
+  const products = [
+    { id: 1, name: "T-shirt", price: 20 },
+    { id: 2, name: "Jeans", price: 40 },
+    { id: 3, name: "Sneakers", price: 60 }
+  ];
+
+  function getCart() {
+    return JSON.parse(localStorage.getItem('cart')) || [];
+  }
+  function saveCart(cart) {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }
+  function showPage(pageId) {
+    ['pageLogin','pageProducts','pageCart','pagePay'].forEach(id => {
+      document.getElementById(id).style.display = (id === pageId) ? 'block' : 'none';
+    });
+  }
+
+  // Navigation buttons
+  document.getElementById('navLogin').onclick = () => showPage('pageLogin');
+  document.getElementById('navProducts').onclick = () => {
+    if (!localStorage.getItem('phone')) {
+      alert('Please login first!');
+      showPage('pageLogin');
+      return;
+    }
+    showPage('pageProducts');
+    renderProducts();
+  };
+  document.getElementById('navCart').onclick = () => {
+    if (!localStorage.getItem('phone')) {
+      alert('Please login first!');
+      showPage('pageLogin');
+      return;
+    }
+    showPage('pageCart');
+    renderCart();
+  };
+  document.getElementById('navPay').onclick = () => {
+    if (!localStorage.getItem('phone')) {
+      alert('Please login first!');
+      showPage('pageLogin');
+      return;
+    }
+    showPage('pagePay');
+  };
+
+  // Login logic
+  document.getElementById('loginBtn').onclick = () => {
+    const phone = document.getElementById('phone').value.trim();
+    if (!phone) {
+      alert("Please enter your phone number");
+      return;
+    }
+    localStorage.setItem('phone', phone);
+    document.getElementById('loginStatus').textContent = `Logged in as ${phone}`;
+    alert("Logged in successfully!");
+    showPage('pageProducts');
+    renderProducts();
+  };
+
+  // Render products
+  function renderProducts() {
+    const container = document.getElementById('products');
+    container.innerHTML = '';
+    products.forEach(p => {
+      const div = document.createElement('div');
+      div.innerHTML = `<strong>${p.name}</strong> - $${p.price} <button data-id="${p.id}">Add to Cart</button>`;
+      container.appendChild(div);
+    });
+  }
+
+  // Add product to cart
+  document.getElementById('products').onclick = e => {
+    if (e.target.tagName === 'BUTTON') {
+      const id = Number(e.target.dataset.id);
+      const cart = getCart();
+      const product = products.find(p => p.id === id);
+      cart.push(product);
+      saveCart(cart);
+      alert(`${product.name} added to cart`);
+    }
+  };
+
+  // Go to cart button in products section
+  document.getElementById('goToCart').onclick = () => {
+    showPage('pageCart');
+    renderCart();
+  };
+
+  // Render cart items
+  function renderCart() {
+    const container = document.getElementById('cartItems');
+    const cart = getCart();
+    container.innerHTML = '';
+    if (cart.length === 0) {
+      container.innerHTML = '<p>Your cart is empty.</p>';
+      return;
+    }
+    cart.forEach(item => {
+      const div = document.createElement('div');
+      div.textContent = `${item.name} - $${item.price}`;
+      container.appendChild(div);
+    });
+  }
+
+  // Buy button logic
+  document.getElementById('buyBtn').onclick = () => {
+    const cart = getCart();
+    if (cart.length === 0) {
+      alert("Your cart is empty");
+      return;
+    }
+    showPage('pagePay');
+  };
+
+  // Payment form submission
+  document.getElementById('paymentForm').onsubmit = e => {
+    e.preventDefault();
+    alert("Payment Successful! Thank you for your purchase.");
+    localStorage.removeItem('cart');
+    showPage('pageProducts');
+    renderProducts();
+  };
+
+  // On load, show login page or products if logged in
+  window.onload = () => {
+    if (localStorage.getItem('phone')) {
+      showPage('pageProducts');
+      renderProducts();
+    } else {
+      showPage('pageLogin');
+    }
+  };
+</script>
+
+</body>
+</html>
